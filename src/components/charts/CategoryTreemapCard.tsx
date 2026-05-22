@@ -1,21 +1,8 @@
-import { ResponsiveContainer, Tooltip, Treemap } from 'recharts';
 import type { CategoryTreemapNode } from '../../types';
 import './categoryTreemap.css';
 
 type Props = {
   categoryTree: CategoryTreemapNode[];
-};
-
-type TreemapNode = CategoryTreemapNode & {
-  depth?: number;
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  name?: string;
-  value?: number;
-  fill?: string;
-  stroke?: string;
 };
 
 const CATEGORY_COLORS = [
@@ -33,9 +20,6 @@ const formatPercent = (value?: number) =>
 
 const formatNumber = (value?: number) =>
   typeof value === 'number' ? value.toLocaleString('pt-BR') : '-';
-
-const truncate = (text = '', max = 26) =>
-  text.length > max ? `${text.slice(0, max)}...` : text;
 
 const getVisibleSubcategoryCount = (categoryShare: number): number => {
   if (categoryShare >= 15) return 3;
@@ -204,209 +188,90 @@ const buildExecutiveTreemap = (tree: CategoryTreemapNode[]) => {
 
   return result;
 };
-const TreemapTooltip = ({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload?: TreemapNode }>;
-}) => {
-  if (!active || !payload?.length || !payload[0]?.payload) return null;
 
-  const node = payload[0].payload;
-  const isSubcategory = Boolean(node.subcategory);
+const CategoryCard = ({
+  category,
+  color,
+}: {
+  category: CategoryTreemapNode;
+  color: string;
+}) => {
+  const sortedSubcategories = [...(category.children ?? [])].sort(
+    (a, b) => b.value - a.value
+  );
 
   return (
-    <div className="category-treemap-tooltip">
-      <div className="category-treemap-tooltip__title">
-        {isSubcategory ? node.subcategory : node.category ?? node.name}
+    <div
+      className="category-card"
+      style={{
+        borderTopColor: color,
+      }}
+    >
+      <div className="category-card__header" style={{ backgroundColor: color }}>
+        <div className="category-card__title">
+          {category.name}
+        </div>
+        <div className="category-card__meta">
+          {formatNumber(category.value)} • {formatPercent(category.shareOfTotal)}
+        </div>
       </div>
 
-      {isSubcategory && (
-        <div className="category-treemap-tooltip__row">
-          <span>Categoria</span>
-          <strong>{node.category}</strong>
-        </div>
-      )}
-
-      <div className="category-treemap-tooltip__row">
-        <span>Chamados</span>
-        <strong className="category-treemap-tooltip__value--primary">
-          {formatNumber(node.total ?? node.value)}
-        </strong>
-      </div>
-
-      {isSubcategory && (
-        <div className="category-treemap-tooltip__row">
-          <span>% da categoria</span>
-          <strong>{formatPercent(node.shareOfCategory)}</strong>
-        </div>
-      )}
-
-      <div className="category-treemap-tooltip__row">
-        <span>% do total</span>
-        <strong>{formatPercent(node.shareOfTotal)}</strong>
+      <div className="category-card__grid">
+        {sortedSubcategories.map((sub) => (
+          <div
+            key={`${sub.category}-${sub.subcategory}`}
+            className="category-card__item"
+          >
+            <div className="category-card__item-name">
+              {sub.name}
+            </div>
+            <div className="category-card__item-value">
+              {formatNumber(sub.value)}
+            </div>
+            <div className="category-card__item-percent">
+              {formatPercent(sub.shareOfTotal)}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 };
 
-const TreemapCell = (props: Partial<TreemapNode>) => {
-  const {
-    x = 0,
-    y = 0,
-    width = 0,
-    height = 0,
-    depth = 1,
-    name = '',
-    value = 0,
-    total = 0,
-    shareOfTotal = 0,
-    fill = '#E8F1FA',
-    subcategory,
-    category,
-  } = props;
-
-  if (width < 46 || height < 34) return null;
-
-  const isCategory = depth === 1 && !subcategory;
-  const isSubcategory = depth >= 2 || Boolean(subcategory);
-
-  const padding = 12;
-  const label = subcategory ?? name;
-
-  const showFull = width >= 150 && height >= 95;
-  const showMedium = width >= 115 && height >= 66;
-  const showValueOnly = width >= 72 && height >= 44;
-
-  if (isCategory) {
-    const headerHeight = 32;
-
-    return (
-      <g>
-        <rect
-          x={x + 3}
-          y={y + 3}
-          width={Math.max(width - 6, 0)}
-          height={Math.max(height - 6, 0)}
-          rx={16}
-          ry={16}
-          fill="#ffffff"
-          stroke="#ffffff"
-          strokeWidth={3}
-        />
-
-        <rect
-          x={x + 3}
-          y={y + 3}
-          width={Math.max(width - 6, 0)}
-          height={headerHeight}
-          rx={16}
-          ry={16}
-          fill={fill}
-        />
-
-        {width >= 120 && height >= 58 && (
-          <text
-            x={x + padding + 3}
-            y={y + 20}
-            fill="#ffffff"
-            fontSize={12}
-            fontWeight={700}
-            pointerEvents="none"
-          >
-            <tspan x={x + padding + 3}>{truncate(category ?? name, 32)}</tspan>
-          </text>
-        )}
-
-        {width >= 140 && height >= 58 && (
-          <text
-            x={x + padding + 3}
-            y={y + 28}
-            fill="#ffffff"
-            fontSize={11}
-            fontWeight={600}
-            pointerEvents="none"
-          >
-            {formatNumber(total ?? value)} • {formatPercent(shareOfTotal)}
-          </text>
-        )}
-      </g>
-    );
-  }
-
-  if (!isSubcategory) return null;
-
+const SubcategoryRow = ({
+  subcategory,
+  color,
+}: {
+  subcategory: CategoryTreemapNode;
+  color: string;
+}) => {
   return (
-    <g>
-      <rect
-        x={x + 3}
-        y={y + 3}
-        width={Math.max(width - 6, 0)}
-        height={Math.max(height - 6, 0)}
-        rx={12}
-        ry={12}
-        fill={fill}
-        stroke="#ffffff"
-        strokeWidth={3}
-      />
-
-      {showFull && (
-        <text
-          x={x + padding + 3}
-          y={y + 26}
-          fill="#0f172a"
-          fontSize={12}
-          fontWeight={700}
-          pointerEvents="none"
-        >
-          <tspan x={x + padding + 3}>{truncate(label, 25)}</tspan>
-          <tspan x={x + padding + 3} dy="24" fontSize={20} fontWeight={900}>
-            {formatNumber(value)}
-          </tspan>
-          <tspan x={x + padding + 3} dy="18" fontSize={12} fontWeight={600}>
-            {formatPercent(shareOfTotal)} do total
-          </tspan>
-        </text>
-      )}
-
-      {!showFull && showMedium && (
-        <text
-          x={x + padding + 3}
-          y={y + 24}
-          fill="#0f172a"
-          fontSize={12}
-          fontWeight={700}
-          pointerEvents="none"
-        >
-          <tspan x={x + padding + 3}>{truncate(label, 18)}</tspan>
-          <tspan x={x + padding + 3} dy="22" fontSize={17} fontWeight={900}>
-            {formatNumber(value)}
-          </tspan>
-        </text>
-      )}
-
-      {!showFull && !showMedium && showValueOnly && (
-        <text
-          x={x + padding + 3}
-          y={y + 27}
-          fill="#0f172a"
-          fontSize={15}
-          fontWeight={900}
-          pointerEvents="none"
-        >
-          {formatNumber(value)}
-        </text>
-      )}
-    </g>
+    <div
+      className="subcategory-row"
+      style={{
+        borderLeftColor: color,
+      }}
+    >
+      <div className="subcategory-row__name">{subcategory.name}</div>
+      <div className="subcategory-row__value">
+        {formatNumber(subcategory.value)}
+      </div>
+      <div className="subcategory-row__percent">
+        {formatPercent(subcategory.shareOfTotal)}
+      </div>
+    </div>
   );
 };
+
 
 export const CategoryTreemapCard = ({ categoryTree }: Props) => {
   const data = buildExecutiveTreemap(categoryTree);
 
+  const mainCategories = data.filter((c) => c.name !== 'Outras categorias');
+  const othersCategory = data.find((c) => c.name === 'Outras categorias');
+
   return (
-    <article className="chart-card chart-card--wide chart-card--treemap">
+    <article className="chart-card chart-card--wide chart-card--grid-treemap">
       <div className="chart-header">
         <div>
           <p className="eyebrow">Categorias</p>
@@ -417,24 +282,42 @@ export const CategoryTreemapCard = ({ categoryTree }: Props) => {
         </div>
       </div>
 
-      <section className="treemap-shell">
-        <ResponsiveContainer width="100%" height={580}>
-          <Treemap
-            data={data}
-            dataKey="value"
-            nameKey="name"
-            aspectRatio={2.8}
-            content={<TreemapCell />}
-            isAnimationActive={false}
-          >
-            <Tooltip content={<TreemapTooltip />} />
-          </Treemap>
-        </ResponsiveContainer>
+      <section className="treemap-grid">
+        {mainCategories.map((category, index) => (
+          <CategoryCard
+            key={category.name}
+            category={category}
+            color={CATEGORY_COLORS[index % CATEGORY_COLORS.length]}
+          />
+        ))}
+
+        {othersCategory && (
+          <div className="category-card category-card--others">
+            <div className="category-card__header" style={{ backgroundColor: '#6B7280' }}>
+              <div className="category-card__title">
+                {othersCategory.name}
+              </div>
+              <div className="category-card__meta">
+                {formatNumber(othersCategory.value)} • {formatPercent(othersCategory.shareOfTotal)}
+              </div>
+            </div>
+
+            <div className="category-card__subcats">
+              {(othersCategory.children ?? []).map((sub) => (
+                <SubcategoryRow
+                  key={`${sub.category}-${sub.subcategory}`}
+                  subcategory={sub}
+                  color="#9CA3AF"
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       <div className="treemap-legendless-note">
-        Cada grupo representa uma categoria. Os blocos internos representam subcategorias,
-        com tamanho proporcional ao volume de chamados.
+        Cada grupo representa uma categoria com suas subcategorias mais relevantes.
+        Categorias com menos de 5% do total são consolidadas em "Outras categorias".
       </div>
     </article>
   );
