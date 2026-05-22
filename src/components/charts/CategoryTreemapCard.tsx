@@ -166,7 +166,7 @@ const buildExecutiveTreemap = (tree: CategoryTreemapNode[]) => {
     const othersChildren: CategoryTreemapNode[] = consolidatedSubcategories.map(
       (subcategory: any) => ({
         ...subcategory,
-        category: 'Outras categorias',
+        category: 'Outras',
         fill: '#9CA3AF',
         value: transformValueForLayout(subcategory.value),
       })
@@ -179,7 +179,7 @@ const buildExecutiveTreemap = (tree: CategoryTreemapNode[]) => {
       const remainingValue = othersValue - consolidatedValue;
       othersChildren.push({
         name: 'Outras subcategorias',
-        category: 'Outras categorias',
+        category: 'Outras',
         subcategory: 'Outras subcategorias',
         value: transformValueForLayout(remainingValue),
         total: remainingValue,
@@ -197,8 +197,8 @@ const buildExecutiveTreemap = (tree: CategoryTreemapNode[]) => {
     }
 
     result.push({
-      name: 'Outras categorias',
-      category: 'Outras categorias',
+      name: 'Outras',
+      category: 'Outras',
       value: transformValueForLayout(othersValue),
       total: othersTotal,
       shareOfCategory: 100,
@@ -372,7 +372,7 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
         >
           <tspan x={x + 10}>{label.substring(0, 25)}</tspan>
           <tspan x={x + 10} dy="24" fontSize={18} fontWeight={900}>
-            {formatNumber(value)}
+            {formatNumber(total ?? value)}
           </tspan>
           <tspan x={x + 10} dy="16" fontSize={11} fontWeight={600}>
             {formatPercent(shareOfTotal)}
@@ -391,7 +391,7 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
         >
           <tspan x={x + 10}>{label.substring(0, 18)}</tspan>
           <tspan x={x + 10} dy={20} fontSize={16} fontWeight={900}>
-            {formatNumber(value)}
+            {formatNumber(total ?? value)}
           </tspan>
         </text>
       )}
@@ -405,7 +405,7 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
           fontWeight={900}
           pointerEvents="none"
         >
-          {formatNumber(value)}
+          {formatNumber(total ?? value)}
         </text>
       )}
 
