@@ -15,6 +15,7 @@ type TreemapNode = CategoryTreemapNode & {
   name?: string;
   value?: number;
   fill?: string;
+  stroke?: string;
 };
 
 const CATEGORY_COLORS = [
@@ -36,10 +37,19 @@ const formatNumber = (value?: number) =>
 const truncate = (text = '', max = 26) =>
   text.length > max ? `${text.slice(0, max)}...` : text;
 
-const getReadableTextColor = (depth?: number) => {
-  if (depth === 1) return '#ffffff';
-  return '#0f172a';
-};
+const enhanceTreeColors = (tree: CategoryTreemapNode[]) =>
+  tree.map((category, index) => {
+    const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+
+    return {
+      ...category,
+      fill: color,
+      children: category.children?.map((child, childIndex) => ({
+        ...child,
+        fill: `${color}${childIndex % 2 === 0 ? '26' : '38'}`,
+      })),
+    };
+  });
 
 const TreemapTooltip = ({
   active,
@@ -109,14 +119,12 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
   const isCategory = depth === 1 && !subcategory;
   const isSubcategory = depth >= 2 || Boolean(subcategory);
 
-  const label = subcategory ?? name;
   const padding = 12;
+  const label = subcategory ?? name;
 
   const showFull = width >= 150 && height >= 95;
   const showMedium = width >= 115 && height >= 66;
   const showValueOnly = width >= 72 && height >= 44;
-
-  const textColor = getReadableTextColor(depth);
 
   if (isCategory) {
     const headerHeight = Math.min(54, Math.max(44, height * 0.18));
@@ -184,7 +192,7 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
         <text
           x={x + padding + 3}
           y={y + 26}
-          fill={textColor}
+          fill="#0f172a"
           fontSize={12}
           fontWeight={700}
           pointerEvents="none"
@@ -203,7 +211,7 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
         <text
           x={x + padding + 3}
           y={y + 24}
-          fill={textColor}
+          fill="#0f172a"
           fontSize={12}
           fontWeight={700}
           pointerEvents="none"
@@ -219,7 +227,7 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
         <text
           x={x + padding + 3}
           y={y + 27}
-          fill={textColor}
+          fill="#0f172a"
           fontSize={15}
           fontWeight={900}
           pointerEvents="none"
@@ -230,20 +238,6 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
     </g>
   );
 };
-
-const enhanceTreeColors = (tree: CategoryTreemapNode[]) =>
-  tree.map((category, index) => {
-    const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
-
-    return {
-      ...category,
-      fill: color,
-      children: category.children?.map((child, childIndex) => ({
-        ...child,
-        fill: `${color}${childIndex % 2 === 0 ? '26' : '38'}`,
-      })),
-    };
-  });
 
 export const CategoryTreemapCard = ({ categoryTree }: Props) => {
   const data = enhanceTreeColors(categoryTree);

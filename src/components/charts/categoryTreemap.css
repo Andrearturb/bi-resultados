@@ -30,10 +30,6 @@
 
 .chart-card--treemap svg text {
   user-select: none;
-  paint-order: stroke;
-  stroke: rgba(255, 255, 255, 0.72);
-  stroke-width: 2px;
-  stroke-linejoin: round;
 }
 
 .chart-card--treemap svg rect {
