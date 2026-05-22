@@ -264,25 +264,281 @@ select {
   font-size: 1.2rem;
 }
 
+.chart-subtitle {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+}
+
+.chart-card--ops {
+  background: #ffffff;
+}
+
+.summary-card {
+  padding: 22px;
+  background: linear-gradient(135deg, rgba(8, 43, 91, 0.05), rgba(12, 122, 117, 0.05));
+  border: 1px solid rgba(5, 56, 98, 0.1);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.summary-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.summary-card__header h3 {
+  margin: 6px 0 0;
+  font-size: 1.2rem;
+}
+
+.summary-concentration {
+  flex: 0 0 auto;
+}
+
+.summary-concentration__ring {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: conic-gradient(#0c7a75 71%, rgba(5, 56, 98, 0.08) 0);
+  position: relative;
+}
+
+.summary-concentration__ring::after {
+  content: '';
+  position: absolute;
+  inset: 13px;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+.summary-concentration__ring strong,
+.summary-concentration__ring span {
+  position: relative;
+  z-index: 1;
+}
+
+.summary-concentration__ring strong {
+  display: block;
+  color: #0c7a75;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.summary-concentration__ring span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.summary-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid rgba(5, 56, 98, 0.08);
+  border-radius: 16px;
+}
+
+.summary-stat__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(8, 43, 91, 0.08);
+  color: #082b5b;
+  font-size: 1.05rem;
+}
+
+.summary-stat p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.summary-stat strong {
+  display: block;
+  margin-top: 2px;
+  color: #0f172a;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.summary-insights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.summary-insight {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(5, 56, 98, 0.08);
+  background: #ffffff;
+}
+
+.summary-insight__icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.summary-insight h4,
+.summary-insight p {
+  margin: 0;
+}
+
+.summary-insight h4 {
+  color: #0f172a;
+  font-size: 0.96rem;
+}
+
+.summary-insight p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.summary-tone--teal .summary-insight__icon {
+  background: rgba(12, 122, 117, 0.12);
+  color: #0c7a75;
+}
+
+.summary-tone--cyan .summary-insight__icon {
+  background: rgba(8, 43, 91, 0.12);
+  color: #082b5b;
+}
+
+.summary-tone--amber .summary-insight__icon {
+  background: rgba(217, 142, 20, 0.14);
+  color: #d98e14;
+}
+
+.summary-tone--violet .summary-insight__icon {
+  background: rgba(139, 92, 246, 0.14);
+  color: #8b5cf6;
+}
+
+.summary-tone--rose .summary-insight__icon {
+  background: rgba(217, 78, 78, 0.14);
+  color: #d94e4e;
+}
+
+.chart-card--treemap {
+  background: #ffffff;
+}
+
+.treemap-shell {
+  border: 1px solid rgba(5, 56, 98, 0.08);
+  border-radius: 20px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.treemap-legendless-note {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.ops-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ops-kpi-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(5, 56, 98, 0.1);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.ops-kpi-card p {
+  margin: 0;
+  color: #5b6b7a;
+  font-size: 0.86rem;
+}
+
+.ops-kpi-card strong {
+  display: block;
+  margin-top: 2px;
+  color: #0f172a;
+  font-size: 1.7rem;
+  letter-spacing: -0.02em;
+}
+
+.ops-kpi-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.ops-kpi-icon--concluded {
+  background: rgba(12, 122, 117, 0.14);
+  color: #0c7a75;
+}
+
+.ops-kpi-icon--inprogress {
+  background: rgba(8, 43, 91, 0.14);
+  color: #082b5b;
+}
+
+.ops-kpi-icon--rate {
+  background: rgba(88, 214, 199, 0.2);
+  color: #0c7a75;
+}
+
 .chart-tooltip {
   min-width: 240px;
-  padding: 14px 16px;
-  border: 1px solid rgba(5, 56, 98, 0.12);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 18px 48px rgba(7, 26, 48, 0.18);
-  backdrop-filter: blur(18px);
+  padding: 14px 16px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: #082b5b;
+  box-shadow: 0 18px 36px rgba(5, 16, 35, 0.3);
+  color: #fff;
 }
 
 .chart-tooltip--executive {
-  min-width: 260px;
+  min-width: 250px;
 }
 
 .chart-tooltip__title {
   padding-bottom: 10px;
   margin-bottom: 8px;
-  border-bottom: 1px solid rgba(5, 56, 98, 0.1);
-  color: var(--teal-dark);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
   font-size: 0.98rem;
   font-weight: 800;
   letter-spacing: -0.01em;
@@ -294,15 +550,35 @@ select {
   justify-content: space-between;
   gap: 16px;
   padding: 5px 0;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.95);
   font-size: 0.88rem;
 }
 
-.chart-tooltip__row strong {
-  color: var(--text);
+.chart-tooltip__label {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.chart-tooltip__value {
   font-size: 0.95rem;
   font-weight: 800;
   letter-spacing: -0.01em;
+}
+
+.chart-tooltip__value--volume {
+  color: #8ec4ff;
+}
+
+.chart-tooltip__value--concluded {
+  color: #58d6c7;
+}
+
+.chart-tooltip__value--inprogress {
+  color: #8ec4ff;
+}
+
+.chart-tooltip__value--rate {
+  color: #f5f5f5;
 }
 
 .table-wrap {
@@ -370,6 +646,20 @@ th {
 
   .kpi-grid,
   .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .summary-stats,
+  .summary-insights {
     grid-template-columns: 1fr;
   }
 }

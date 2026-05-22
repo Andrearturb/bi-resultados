@@ -2,9 +2,11 @@ import * as XLSX from 'xlsx';
 import { daysBetween, formatMonthLabel } from './date';
 import type {
   CategoryPoint,
+  CategoryTreemapNode,
   CanonicalStatus,
   DashboardFilters,
   DashboardMetrics,
+  ExecutiveSummary,
   MonthlyPoint,
   RankedItem,
   RegionPoint,
@@ -232,13 +234,15 @@ export const buildMetrics = (records: SpreadsheetRecord[]): DashboardMetrics => 
 };
 
 export const buildRegionSeries = (records: SpreadsheetRecord[]): RegionPoint[] => {
-  const accumulator = new Map<string, { volume: number; concluded: number }>();
+  const accumulator = new Map<string, { volume: number; concluded: number; inProgress: number }>();
 
   for (const record of records) {
-    const current = accumulator.get(record.region) ?? { volume: 0, concluded: 0 };
+    const current = accumulator.get(record.region) ?? { volume: 0, concluded: 0, inProgress: 0 };
     current.volume += 1;
     if (record.statusGroup === 'concluded') {
       current.concluded += 1;
+    } else if (record.statusGroup === 'in_progress') {
+      current.inProgress += 1;
     }
     accumulator.set(record.region, current);
   }
@@ -248,6 +252,7 @@ export const buildRegionSeries = (records: SpreadsheetRecord[]): RegionPoint[] =
       region,
       volume: value.volume,
       concluded: value.concluded,
+      inProgress: value.inProgress,
       completionRate: value.volume ? (value.concluded / value.volume) * 100 : 0,
     }))
     .sort((left, right) => right.volume - left.volume);
@@ -317,6 +322,236 @@ export const buildProviderRanking = (records: SpreadsheetRecord[]) => buildRank(
 export const buildCategoryRanking = (records: SpreadsheetRecord[]): CategoryPoint[] => {
   const ranking = buildRank(records, (record) => `${record.category} • ${record.subcategory}`);
   return ranking.map((item) => ({ label: item.label, volume: item.volume }));
+};
+
+const treemapPalette = ['#082B5B', '#0C7A75', '#2F6BFF', '#8B5CF6', '#D98E14', '#D94E4E', '#5E7EA6', '#2EA8A1'];
+
+const toRgba = (hex: string, alpha: number) => {
+  const normalized = hex.replace('#', '');
+  const expanded = normalized.length === 3 ? normalized.split('').map((character) => character + character).join('') : normalized;
+  const numeric = Number.parseInt(expanded, 16);
+  const red = (numeric >> 16) & 255;
+  const green = (numeric >> 8) & 255;
+  const blue = numeric & 255;
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+};
+
+export const buildCategoryTreemap = (records: SpreadsheetRecord[]): CategoryTreemapNode[] => {
+  const categories = new Map<
+    string,
+    { total: number; subcategories: Map<string, number> }
+  >();
+
+  for (const record of records) {
+    const category = record.category || 'Não informado';
+    const subcategory = record.subcategory || 'Não informado';
+    const current = categories.get(category) ?? { total: 0, subcategories: new Map<string, number>() };
+    current.total += 1;
+    current.subcategories.set(subcategory, (current.subcategories.get(subcategory) ?? 0) + 1);
+    categories.set(category, current);
+  }
+
+  const total = records.length || 1;
+
+  return [...categories.entries()]
+    .sort((left, right) => right[1].total - left[1].total)
+    .map(([category, value], categoryIndex) => {
+      const baseColor = treemapPalette[categoryIndex % treemapPalette.length];
+      const categoryNode: CategoryTreemapNode = {
+        name: category,
+        category,
+        value: value.total,
+        total: value.total,
+        shareOfCategory: 100,
+        shareOfTotal: (value.total / total) * 100,
+        fill: toRgba(baseColor, 0.14),
+        stroke: toRgba(baseColor, 0.32),
+        children: [...value.subcategories.entries()]
+          .sort((left, right) => right[1] - left[1])
+          .map(([subcategory, count], subcategoryIndex) => ({
+            name: subcategory,
+            category,
+            subcategory,
+            value: count,
+            total: count,
+            shareOfCategory: (count / value.total) * 100,
+            shareOfTotal: (count / total) * 100,
+            fill: toRgba(baseColor, Math.max(0.28, 0.74 - subcategoryIndex * 0.08)),
+            stroke: toRgba(baseColor, 0.45),
+          })),
+      };
+
+      return categoryNode;
+    });
+};
+
+const getDateBounds = (records: SpreadsheetRecord[]) => {
+  const dates = records
+    .map((record) => record.requestDate)
+    .filter((value): value is string => Boolean(value))
+    .map((value) => new Date(value).getTime())
+    .filter((value) => !Number.isNaN(value));
+
+  if (!dates.length) {
+    return null;
+  }
+
+  return {
+    start: new Date(Math.min(...dates)),
+    end: new Date(Math.max(...dates)),
+  };
+};
+
+const filterByRange = (records: SpreadsheetRecord[], start: Date, end: Date) =>
+  records.filter((record) => {
+    if (!record.requestDate) {
+      return false;
+    }
+
+    const date = new Date(record.requestDate);
+    return !Number.isNaN(date.getTime()) && date >= start && date <= end;
+  });
+
+const buildPeriodRange = (records: SpreadsheetRecord[], filters: DashboardFilters) => {
+  const hasCustomRange = Boolean(filters.startDate || filters.endDate);
+  const dataBounds = getDateBounds(records);
+
+  if (!dataBounds) {
+    return null;
+  }
+
+  if (hasCustomRange) {
+    const start = filters.startDate ? new Date(`${filters.startDate}T00:00:00`) : dataBounds.start;
+    const end = filters.endDate ? new Date(`${filters.endDate}T23:59:59.999`) : dataBounds.end;
+    const spanMs = Math.max(1, end.getTime() - start.getTime());
+    const previousEnd = new Date(start.getTime() - 1);
+    const previousStart = new Date(previousEnd.getTime() - spanMs);
+    return { start, end, previousStart, previousEnd };
+  }
+
+  const currentEnd = dataBounds.end;
+  const currentStart = new Date(currentEnd.getTime() - 29 * 24 * 60 * 60 * 1000);
+  const previousEnd = new Date(currentStart.getTime() - 1);
+  const previousStart = new Date(previousEnd.getTime() - 29 * 24 * 60 * 60 * 1000);
+
+  return { start: currentStart, end: currentEnd, previousStart, previousEnd };
+};
+
+const formatShare = (value: number) => `${value.toFixed(1)}%`;
+
+const buildCategoryVolumeMap = (records: SpreadsheetRecord[]) => {
+  const volumes = new Map<string, number>();
+  for (const record of records) {
+    const category = record.category || 'Não informado';
+    volumes.set(category, (volumes.get(category) ?? 0) + 1);
+  }
+
+  return [...volumes.entries()].sort((left, right) => right[1] - left[1]);
+};
+
+export const buildExecutiveSummary = (allRecords: SpreadsheetRecord[], filteredRecords: SpreadsheetRecord[], filters: DashboardFilters): ExecutiveSummary => {
+  const total = filteredRecords.length;
+  const categoryBuckets = new Map<string, number>();
+  const subcategoryBuckets = new Map<string, { category: string; volume: number }>();
+
+  for (const record of filteredRecords) {
+    const category = record.category || 'Não informado';
+    const subcategory = record.subcategory || 'Não informado';
+    categoryBuckets.set(category, (categoryBuckets.get(category) ?? 0) + 1);
+    const key = `${category}|||${subcategory}`;
+    const current = subcategoryBuckets.get(key) ?? { category, volume: 0 };
+    current.volume += 1;
+    subcategoryBuckets.set(key, current);
+  }
+
+  const sortedCategories = [...categoryBuckets.entries()].sort((left, right) => right[1] - left[1]);
+  const sortedSubcategories = [...subcategoryBuckets.entries()].sort((left, right) => right[1].volume - left[1].volume);
+  const topCategory = sortedCategories[0]
+    ? {
+        label: sortedCategories[0][0],
+        volume: sortedCategories[0][1],
+        shareOfTotal: total ? (sortedCategories[0][1] / total) * 100 : 0,
+      }
+    : null;
+  const topSubcategory = sortedSubcategories[0]
+    ? {
+        category: sortedSubcategories[0][1].category,
+        label: sortedSubcategories[0][0].split('|||')[1],
+        volume: sortedSubcategories[0][1].volume,
+        shareOfCategory: sortedCategories.length ? (sortedSubcategories[0][1].volume / (categoryBuckets.get(sortedSubcategories[0][1].category) ?? 1)) * 100 : 0,
+        shareOfTotal: total ? (sortedSubcategories[0][1].volume / total) * 100 : 0,
+      }
+    : null;
+
+  const top3CategoriesShare = total
+    ? sortedCategories.slice(0, 3).reduce((sum, [, volume]) => sum + volume, 0) / total * 100
+    : 0;
+
+  const periodRange = buildPeriodRange(allRecords, filters);
+  let trend: ExecutiveSummary['trend'] = null;
+
+  if (periodRange) {
+    const currentRecords = filterByRange(allRecords, periodRange.start, periodRange.end);
+    const previousRecords = filterByRange(allRecords, periodRange.previousStart, periodRange.previousEnd);
+    const currentCategory = buildCategoryVolumeMap(currentRecords)[0];
+    const previousCategory = buildCategoryVolumeMap(previousRecords)[0];
+
+    if (currentCategory && previousCategory) {
+      const delta = currentCategory[1] - previousCategory[1];
+      trend = {
+        label: currentCategory[0],
+        delta,
+        current: currentCategory[1],
+        previous: previousCategory[1],
+      };
+    }
+  }
+
+  const concentration = total ? (sortedCategories.slice(0, 3).reduce((sum, [, volume]) => sum + volume, 0) / total) * 100 : 0;
+  const insights = [
+    topCategory
+      ? {
+          icon: '◼',
+          title: `${topCategory.label} lidera a concentração operacional`,
+          description: `${topCategory.label} responde por ${formatShare(topCategory.shareOfTotal)} dos chamados do período (${topCategory.volume} registros).`,
+          tone: 'teal' as const,
+        }
+      : null,
+    topSubcategory
+      ? {
+          icon: '▣',
+          title: `${topSubcategory.label} é a subcategoria mais pressionada`,
+          description: `${topSubcategory.label} concentra ${topSubcategory.volume} chamados dentro de ${topSubcategory.category}.`,
+          tone: 'cyan' as const,
+        }
+      : null,
+    {
+      icon: '↗',
+      title: 'Concentração das principais categorias',
+      description: `As 3 principais categorias concentram ${formatShare(concentration)} dos chamados exibidos no cenário atual.`,
+      tone: 'violet' as const,
+    },
+    trend
+      ? {
+          icon: trend.delta >= 0 ? '▲' : '▼',
+          title: `${trend.label} versus período anterior`,
+          description: `${trend.label} registrou ${trend.delta >= 0 ? 'alta' : 'queda'} de ${Math.abs(trend.delta)} chamados em relação ao período anterior.`,
+          tone: trend.delta >= 0 ? ('amber' as const) : ('rose' as const),
+        }
+      : null,
+  ].filter(Boolean) as ExecutiveSummary['insights'];
+
+  return {
+    total,
+    categoryCount: sortedCategories.length,
+    subcategoryCount: sortedSubcategories.length,
+    concentration,
+    topCategory,
+    topSubcategory,
+    top3CategoriesShare,
+    trend,
+    insights,
+  };
 };
 
 export const buildAnalystRanking = (records: SpreadsheetRecord[]) => buildRank(records, (record) => record.analyst);

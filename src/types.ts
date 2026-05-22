@@ -59,10 +59,60 @@ export type RegionPoint = {
   region: string;
   volume: number;
   concluded: number;
+  inProgress: number;
   completionRate: number;
 };
 
 export type CategoryPoint = {
   label: string;
   volume: number;
+};
+
+export type CategoryTreemapNode = {
+  name: string;
+  category: string;
+  subcategory?: string;
+  value: number;
+  total: number;
+  shareOfCategory: number;
+  shareOfTotal: number;
+  fill: string;
+  stroke: string;
+  children?: CategoryTreemapNode[];
+};
+
+export type ExecutiveInsightTone = 'teal' | 'cyan' | 'amber' | 'violet' | 'rose';
+
+export type ExecutiveInsight = {
+  icon: string;
+  title: string;
+  description: string;
+  tone: ExecutiveInsightTone;
+};
+
+export type ExecutiveSummary = {
+  total: number;
+  categoryCount: number;
+  subcategoryCount: number;
+  concentration: number;
+  topCategory: {
+    label: string;
+    volume: number;
+    shareOfTotal: number;
+  } | null;
+  topSubcategory: {
+    label: string;
+    category: string;
+    volume: number;
+    shareOfCategory: number;
+    shareOfTotal: number;
+  } | null;
+  top3CategoriesShare: number;
+  trend: {
+    label: string;
+    delta: number;
+    current: number;
+    previous: number;
+  } | null;
+  insights: ExecutiveInsight[];
 };

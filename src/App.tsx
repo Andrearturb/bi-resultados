@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ChartsGrid } from './components/ChartsGrid';
 import { FilterBar } from './components/FilterBar';
-import { InsightCallout } from './components/InsightCallout';
+import { ExecutiveSummary } from './components/ExecutiveSummary';
 import { KpiCard } from './components/KpiCard';
 import { PerformanceTable } from './components/PerformanceTable';
 import { UploadPanel } from './components/UploadPanel';
@@ -10,8 +10,8 @@ import { formatDateInput } from './utils/date';
 import {
   applyFilters,
   buildAnalystRanking,
-  buildCategoryRanking,
-  buildInsight,
+  buildCategoryTreemap,
+  buildExecutiveSummary,
   buildMetrics,
   buildMonthlySeries,
   buildProviderRanking,
@@ -31,10 +31,30 @@ export const App = () => {
   const metrics = useMemo(() => buildMetrics(filteredRecords), [filteredRecords]);
   const regions = useMemo(() => buildRegionSeries(filteredRecords), [filteredRecords]);
   const months = useMemo(() => buildMonthlySeries(filteredRecords), [filteredRecords]);
-  const categories = useMemo(() => buildCategoryRanking(filteredRecords), [filteredRecords]);
+  const categoryTree = useMemo(() => buildCategoryTreemap(filteredRecords), [filteredRecords]);
   const providers = useMemo(() => buildProviderRanking(filteredRecords), [filteredRecords]);
   const analysts = useMemo(() => buildAnalystRanking(filteredRecords), [filteredRecords]);
-  const insight = useMemo(() => buildInsight(filteredRecords), [filteredRecords]);
+  const executiveSummary = useMemo(() => buildExecutiveSummary(records, filteredRecords, filters), [records, filteredRecords, filters]);
+  const periodLabel = useMemo(() => {
+    const formatFilterDate = (value: string) => {
+      const date = new Date(`${value}T00:00:00`);
+      return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('pt-BR');
+    };
+
+    if (filters.startDate && filters.endDate) {
+      return `${formatFilterDate(filters.startDate)} - ${formatFilterDate(filters.endDate)}`;
+    }
+
+    if (filters.startDate) {
+      return `Desde ${formatFilterDate(filters.startDate)}`;
+    }
+
+    if (filters.endDate) {
+      return `Até ${formatFilterDate(filters.endDate)}`;
+    }
+
+    return 'Últimos 30 dias';
+  }, [filters.endDate, filters.startDate]);
 
   const handleFile = async (file: File) => {
     setLoading(true);
@@ -91,9 +111,9 @@ export const App = () => {
               <KpiCard label="Tempo médio" value={`${metrics.avgSlaDays.toFixed(1)} dias`} helper="Entre abertura e conclusão" progress={Math.min(100, metrics.avgSlaDays * 10)} tone="cyan" />
             </section>
 
-            <InsightCallout headline={insight.headline} secondary={insight.secondary} action={insight.action} />
+            <ExecutiveSummary summary={executiveSummary} />
 
-            <ChartsGrid regions={regions} months={months} categories={categories} />
+            <ChartsGrid regions={regions} months={months} periodLabel={periodLabel} categoryTree={categoryTree} />
 
             <PerformanceTable rows={providers} title="Fornecedores com mais impacto" subtitle="Ranking por volume, taxa de conclusão e tempo médio" />
             <PerformanceTable rows={analysts} title="Analistas responsáveis" subtitle="Leitura de produtividade individual após os filtros atuais" />
