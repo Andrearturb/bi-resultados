@@ -37,20 +37,173 @@ const formatNumber = (value?: number) =>
 const truncate = (text = '', max = 26) =>
   text.length > max ? `${text.slice(0, max)}...` : text;
 
-const enhanceTreeColors = (tree: CategoryTreemapNode[]) =>
-  tree.map((category, index) => {
-    const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+const getVisibleSubcategoryCount = (categoryShare: number): number => {
+  if (categoryShare >= 15) return 3;
+  if (categoryShare >= 8) return 2;
+  if (categoryShare >= 5) return 1;
+  return 0;
+};
 
-    return {
-      ...category,
-      fill: color,
-      children: category.children?.map((child, childIndex) => ({
-        ...child,
-        fill: `${color}${childIndex % 2 === 0 ? '26' : '38'}`,
-      })),
-    };
-  });
+const buildCategoryChildren = (
+  category: CategoryTreemapNode,
+  color: string
+): CategoryTreemapNode[] => {
+  const visibleCount = getVisibleSubcategoryCount(category.shareOfTotal);
 
+  const sortedChildren = [...(category.children ?? [])].sort(
+    (a, b) => b.value - a.value
+  );
+
+  const visibleChildren = sortedChildren.slice(0, visibleCount);
+  const hiddenChildren = sortedChildren.slice(visibleCount);
+
+  const result: CategoryTreemapNode[] = visibleChildren.map(
+    (child, childIndex) => ({
+      ...child,
+      fill: `${color}${childIndex === 0 ? '30' : childIndex === 1 ? '42' : '52'}`,
+    })
+  );
+
+  if (hiddenChildren.length > 0) {
+    const hiddenValue = hiddenChildren.reduce((sum, item) => sum + item.value, 0);
+    const hiddenShareOfTotal = hiddenChildren.reduce(
+      (sum, item) => sum + item.shareOfTotal,
+      0
+    );
+    const hiddenShareOfCategory = hiddenChildren.reduce(
+      (sum, item) => sum + item.shareOfCategory,
+      0
+    );
+
+    result.push({
+      name: 'Outras subcategorias',
+      category: category.category,
+      subcategory: 'Outras subcategorias',
+      value: hiddenValue,
+      total: hiddenValue,
+      shareOfCategory: hiddenShareOfCategory,
+      shareOfTotal: hiddenShareOfTotal,
+      fill: `${color}18`,
+      stroke: 'transparent',
+    });
+  }
+
+  return result;
+};
+
+const consolidateSubcategories = (categories: CategoryTreemapNode[]): any => {
+  const consolidated: Record<string, any> = {};
+
+  for (const category of categories) {
+    for (const subcategory of category.children ?? []) {
+      const key = subcategory.subcategory || subcategory.name;
+
+      if (!consolidated[key]) {
+        consolidated[key] = {
+          ...subcategory,
+          value: 0,
+          total: 0,
+          shareOfTotal: 0,
+          shareOfCategory: 0,
+        };
+      }
+
+      consolidated[key].value += subcategory.value;
+      consolidated[key].total += subcategory.value;
+      consolidated[key].shareOfTotal += subcategory.shareOfTotal;
+      consolidated[key].shareOfCategory += subcategory.shareOfCategory;
+    }
+  }
+
+  return Object.values(consolidated)
+    .sort((a: any, b: any) => b.value - a.value)
+    .slice(0, 2);
+};
+
+const buildExecutiveTreemap = (tree: CategoryTreemapNode[]) => {
+  const sortedCategories = [...tree].sort((a, b) => b.value - a.value);
+
+  const mainCategories = sortedCategories.filter((c) => c.shareOfTotal >= 5);
+  const smallCategories = sortedCategories.filter((c) => c.shareOfTotal < 5);
+
+  const result: CategoryTreemapNode[] = mainCategories.map(
+    (category, index) => {
+      const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+      return {
+        ...category,
+        fill: color,
+        children: buildCategoryChildren(category, color),
+      };
+    }
+  );
+
+  if (smallCategories.length > 0) {
+    const othersValue = smallCategories.reduce(
+      (sum, item) => sum + item.value,
+      0
+    );
+    const othersTotal = smallCategories.reduce(
+      (sum, item) => sum + item.total,
+      0
+    );
+    const othersShareOfTotal = smallCategories.reduce(
+      (sum, item) => sum + item.shareOfTotal,
+      0
+    );
+
+    const consolidatedSubcategories = consolidateSubcategories(smallCategories);
+    const consolidatedValue = consolidatedSubcategories.reduce(
+      (sum: number, item: any) => sum + item.value,
+      0
+    );
+
+    const othersChildren: CategoryTreemapNode[] = consolidatedSubcategories.map(
+      (subcategory: any) => ({
+        ...subcategory,
+        category: 'Outras categorias',
+        fill: '#9CA3AF',
+      })
+    );
+
+    if (
+      consolidatedValue < othersValue &&
+      consolidatedSubcategories.length > 0
+    ) {
+      const remainingValue = othersValue - consolidatedValue;
+      othersChildren.push({
+        name: 'Outras subcategorias',
+        category: 'Outras categorias',
+        subcategory: 'Outras subcategorias',
+        value: remainingValue,
+        total: remainingValue,
+        shareOfCategory: 100 - consolidatedSubcategories.reduce(
+          (sum: number, item: any) => sum + item.shareOfCategory,
+          0
+        ),
+        shareOfTotal: othersShareOfTotal - consolidatedSubcategories.reduce(
+          (sum: number, item: any) => sum + item.shareOfTotal,
+          0
+        ),
+        fill: '#D1D5DB',
+        stroke: 'transparent',
+      });
+    }
+
+    result.push({
+      name: 'Outras categorias',
+      category: 'Outras categorias',
+      value: othersValue,
+      total: othersTotal,
+      shareOfCategory: 100,
+      shareOfTotal: othersShareOfTotal,
+      fill: '#6B7280',
+      stroke: 'transparent',
+      children: othersChildren,
+    });
+  }
+
+  return result;
+};
 const TreemapTooltip = ({
   active,
   payload,
@@ -127,7 +280,7 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
   const showValueOnly = width >= 72 && height >= 44;
 
   if (isCategory) {
-    const headerHeight = Math.min(54, Math.max(44, height * 0.18));
+    const headerHeight = 32;
 
     return (
       <g>
@@ -153,19 +306,29 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
           fill={fill}
         />
 
-        {width >= 130 && height >= 62 && (
+        {width >= 120 && height >= 58 && (
           <text
             x={x + padding + 3}
-            y={y + 23}
+            y={y + 20}
             fill="#ffffff"
-            fontSize={13}
-            fontWeight={800}
+            fontSize={12}
+            fontWeight={700}
             pointerEvents="none"
           >
             <tspan x={x + padding + 3}>{truncate(category ?? name, 32)}</tspan>
-            <tspan x={x + padding + 3} dy="18" fontSize={13} fontWeight={800}>
-              {formatNumber(total ?? value)} • {formatPercent(shareOfTotal)}
-            </tspan>
+          </text>
+        )}
+
+        {width >= 140 && height >= 58 && (
+          <text
+            x={x + padding + 3}
+            y={y + 28}
+            fill="#ffffff"
+            fontSize={11}
+            fontWeight={600}
+            pointerEvents="none"
+          >
+            {formatNumber(total ?? value)} • {formatPercent(shareOfTotal)}
           </text>
         )}
       </g>
@@ -240,7 +403,7 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
 };
 
 export const CategoryTreemapCard = ({ categoryTree }: Props) => {
-  const data = enhanceTreeColors(categoryTree);
+  const data = buildExecutiveTreemap(categoryTree);
 
   return (
     <article className="chart-card chart-card--wide chart-card--treemap">
