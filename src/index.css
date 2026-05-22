@@ -446,22 +446,6 @@ select {
   color: #d94e4e;
 }
 
-.chart-card--treemap {
-  background: #ffffff;
-}
-
-.treemap-shell {
-  border: 1px solid rgba(5, 56, 98, 0.08);
-  border-radius: 20px;
-  overflow: hidden;
-  background: #ffffff;
-}
-
-.treemap-legendless-note {
-  margin-top: 12px;
-  color: var(--muted);
-  font-size: 0.86rem;
-}
 
 .ops-kpi-grid {
   display: grid;
