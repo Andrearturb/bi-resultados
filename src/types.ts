@@ -1,4 +1,4 @@
-export type CanonicalStatus = 'concluded' | 'in_progress' | 'rejected' | 'other';
+export type CanonicalStatus = 'concluded' | 'in_progress' | 'backlog' | 'rejected' | 'other';
 
 export type SpreadsheetRecord = {
   ticketId: string;
@@ -34,6 +34,7 @@ export type DashboardMetrics = {
   total: number;
   concluded: number;
   inProgress: number;
+  backlog: number;
   rejected: number;
   completionRate: number;
   avgSlaDays: number;

@@ -72,6 +72,8 @@ const canonicalStatus = (value: string): CanonicalStatus => {
   // Check rejected first as some words may overlap
   if (matchesAny(normalized, rejectedKeywords)) return 'rejected';
 
+  if (matchesAny(normalized, ['em abert', 'em aberto'])) return 'backlog';
+
   if (matchesAny(normalized, concludedKeywords)) return 'concluded';
 
   if (matchesAny(normalized, inProgressKeywords)) return 'in_progress';
@@ -216,6 +218,7 @@ export const buildMetrics = (records: SpreadsheetRecord[]): DashboardMetrics => 
   const total = records.length;
   const concluded = records.filter((record) => record.statusGroup === 'concluded').length;
   const inProgress = records.filter((record) => record.statusGroup === 'in_progress').length;
+  const backlog = records.filter((record) => record.statusGroup === 'backlog').length;
   const rejected = records.filter((record) => record.statusGroup === 'rejected').length;
   const completionRate = total ? (concluded / total) * 100 : 0;
   const slaWithDates = records
@@ -227,6 +230,7 @@ export const buildMetrics = (records: SpreadsheetRecord[]): DashboardMetrics => 
     total,
     concluded,
     inProgress,
+    backlog,
     rejected,
     completionRate,
     avgSlaDays,
@@ -559,7 +563,9 @@ export const buildAnalystRanking = (records: SpreadsheetRecord[]) => buildRank(r
 export const buildInsight = (records: SpreadsheetRecord[]) => {
   const regionRanking = buildRegionSeries(records);
   const providerRanking = buildProviderRanking(records);
-  const openIssues = records.filter((record) => record.statusGroup === 'in_progress').length;
+  const openIssues = records.filter(
+    (record) => record.statusGroup === 'in_progress' || record.statusGroup === 'backlog'
+  ).length;
   const concluded = records.filter((record) => record.statusGroup === 'concluded').length;
 
   const topRegion = regionRanking[0];

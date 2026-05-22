@@ -105,8 +105,9 @@ export const App = () => {
 
             <section className="kpi-grid">
               <KpiCard label="Total de chamados" value={metrics.total.toString()} helper="Volume total após os filtros" progress={100} tone="cyan" />
-              <KpiCard label="Concluídos" value={metrics.concluded.toString()} helper={`${metrics.completionRate.toFixed(1)}% de conclusão`} progress={metrics.completionRate} tone="teal" />
+              <KpiCard label="Backlog" value={metrics.backlog.toString()} helper="Chamados em espera" progress={metrics.total ? (metrics.backlog / metrics.total) * 100 : 0} tone="amber" />
               <KpiCard label="Em andamento" value={metrics.inProgress.toString()} helper="Itens ainda em atendimento" progress={metrics.total ? (metrics.inProgress / metrics.total) * 100 : 0} tone="amber" />
+              <KpiCard label="Concluídos" value={metrics.concluded.toString()} helper={`${metrics.completionRate.toFixed(1)}% de conclusão`} progress={metrics.completionRate} tone="teal" />
               <KpiCard label="Rejeitados" value={metrics.rejected.toString()} helper="Chamados não aprovados" progress={metrics.total ? (metrics.rejected / metrics.total) * 100 : 0} tone="rose" />
               <KpiCard label="Tempo médio" value={`${metrics.avgSlaDays.toFixed(1)} dias`} helper="Entre abertura e conclusão" progress={Math.min(100, metrics.avgSlaDays * 10)} tone="cyan" />
             </section>
