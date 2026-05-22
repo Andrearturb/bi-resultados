@@ -384,8 +384,8 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
           height={height}
           fill={fill}
           stroke="none"
-          rx={10}
-          ry={10}
+          rx={0}
+          ry={0}
         />
       </g>
     );
@@ -404,8 +404,8 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
         height={height}
         fill={fill}
         stroke="none"
-        rx={10}
-        ry={10}
+        rx={0}
+        ry={0}
       />
 
       {showFull && (
