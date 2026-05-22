@@ -281,6 +281,11 @@ select {
   box-shadow: var(--shadow);
 }
 
+/* Make the eyebrow in the Executive Summary more visible */
+.summary-card .eyebrow {
+  color: var(--teal-dark);
+}
+
 .summary-card__header {
   display: flex;
   justify-content: space-between;
@@ -295,6 +300,10 @@ select {
 }
 
 .summary-concentration {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   flex: 0 0 auto;
 }
 
@@ -317,8 +326,7 @@ select {
   border-radius: 50%;
 }
 
-.summary-concentration__ring strong,
-.summary-concentration__ring span {
+.summary-concentration__ring strong {
   position: relative;
   z-index: 1;
 }
@@ -330,11 +338,13 @@ select {
   letter-spacing: -0.02em;
 }
 
-.summary-concentration__ring span {
+.summary-concentration__label {
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
+  line-height: 1;
+  margin-top: 2px;
 }
 
 .summary-stats {

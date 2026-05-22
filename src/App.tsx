@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ChartsGrid } from './components/ChartsGrid';
 import { FilterBar } from './components/FilterBar';
-import { ExecutiveSummary } from './components/ExecutiveSummary';
 import { KpiCard } from './components/KpiCard';
 import { PerformanceTable } from './components/PerformanceTable';
 import { UploadPanel } from './components/UploadPanel';
@@ -112,9 +111,7 @@ export const App = () => {
               <KpiCard label="Tempo médio" value={`${metrics.avgSlaDays.toFixed(1)} dias`} helper="Entre abertura e conclusão" progress={Math.min(100, metrics.avgSlaDays * 10)} tone="cyan" />
             </section>
 
-            <ExecutiveSummary summary={executiveSummary} />
-
-            <ChartsGrid regions={regions} months={months} periodLabel={periodLabel} categoryTree={categoryTree} />
+            <ChartsGrid regions={regions} months={months} periodLabel={periodLabel} categoryTree={categoryTree} executiveSummary={executiveSummary} />
 
             <PerformanceTable rows={providers} title="Fornecedores com mais impacto" subtitle="Ranking por volume, taxa de conclusão e tempo médio" />
             <PerformanceTable rows={analysts} title="Analistas responsáveis" subtitle="Leitura de produtividade individual após os filtros atuais" />

@@ -20,10 +20,10 @@ export const ExecutiveSummary = ({ summary }: Props) => (
         <h3>Leitura dinâmica do cenário atual</h3>
       </div>
       <div className="summary-concentration">
-        <div className="summary-concentration__ring" style={{ background: `conic-gradient(#0c7a75 ${summary.concentration}%, rgba(5,56,98,0.1) 0)` }}>
-          <strong>{summary.concentration.toFixed(1)}%</strong>
-          <span>Concentração</span>
-        </div>
+          <div className="summary-concentration__ring" style={{ background: `conic-gradient(#0c7a75 ${summary.concentration}%, rgba(5,56,98,0.1) 0)` }}>
+            <strong>{summary.concentration.toFixed(1)}%</strong>
+          </div>
+          <div className="summary-concentration__label">CONCENTRAÇÃO</div>
       </div>
     </div>
 
