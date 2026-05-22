@@ -41,6 +41,31 @@ const getCategoryHeaderLabel = (name: string, width: number) => {
   return name.length > maxLength ? `${name.slice(0, maxLength - 1)}…` : name;
 };
 
+const getSmartTruncatedLabel = (label: string, maxLength: number) => {
+  const normalized = label.replace(/\s+/g, ' ').trim();
+
+  if (normalized.length <= maxLength) return normalized;
+
+  const slice = normalized.slice(0, Math.max(1, maxLength - 1));
+  const cutIndex = Math.max(slice.lastIndexOf(' '), slice.lastIndexOf('/'));
+
+  if (cutIndex > 4) {
+    return `${slice.slice(0, cutIndex).trim()}…`;
+  }
+
+  return `${slice.trimEnd()}…`;
+};
+
+const getSubcategoryTextMode = (width: number, height: number) => {
+  const area = width * height;
+
+  if (width <= 55 || height <= 40 || area <= 1800) return 'hidden';
+  if (width > 140 && height > 90 && area > 13000) return 'full';
+  if (width > 90 && height > 60 && area > 6000) return 'medium';
+
+  return 'compact';
+};
+
 const getVisibleSubcategoryCount = (categoryShare: number): number => {
   if (categoryShare >= 20) return 3;
   if (categoryShare >= 10) return 2;
@@ -375,7 +400,9 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
 
   if (!isSubcategory) return null;
 
-  if (width < 70 || height < 45) {
+  const subcategoryMode = getSubcategoryTextMode(width, height);
+
+  if (subcategoryMode === 'hidden') {
     return (
       <g>
         <rect
@@ -392,9 +419,11 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
     );
   }
 
-  const showFull = width >= 160 && height >= 96;
-  const showMedium = width >= 120 && height >= 70;
-  const showCompact = width >= 90 && height >= 52;
+  const categoryLabel = label;
+  const compactLabel = getSmartTruncatedLabel(
+    categoryLabel,
+    width >= 130 ? 24 : width >= 110 ? 18 : 14
+  );
 
   return (
     <g>
@@ -409,7 +438,7 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
         ry={0}
       />
 
-      {showFull && (
+      {subcategoryMode === 'full' && (
         <text
           x={x + 12}
           y={y + 62}
@@ -428,30 +457,33 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
         </text>
       )}
 
-      {!showFull && showMedium && (
+      {subcategoryMode === 'medium' && (
         <text
           x={x + 12}
           y={y + 50}
           fill="#0f172a"
-          fontSize={10}
+          fontSize={9}
           fontWeight={700}
           pointerEvents="none"
         >
-          <tspan x={x + 12}>{label.substring(0, 16)}</tspan>
-          <tspan x={x + 12} dy={18} fontSize={15} fontWeight={900}>
+          <tspan x={x + 12}>{compactLabel}</tspan>
+          <tspan x={x + 12} dy={17} fontSize={15} fontWeight={900}>
             {formatNumber(total ?? value)}
           </tspan>
         </text>
       )}
 
-      {!showFull && !showMedium && showCompact && (
+      {subcategoryMode === 'compact' && (
         <text
-          x={x + 12}
-          y={y + height / 2 + 5}
+          x={x + width / 2}
+          y={y + height / 2}
           fill="#0f172a"
-          fontSize={13}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize={15}
           fontWeight={900}
           pointerEvents="none"
+          opacity={0.98}
         >
           {formatNumber(total ?? value)}
         </text>
