@@ -304,8 +304,10 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
   }
 
   if (isCategory) {
-    const headerHeight = 26;
+    const headerHeight = 34;
     const labelText = getCategoryHeaderLabel(label, width);
+    const categoryValue = formatNumber(total ?? value);
+    const categoryShare = formatPercent(shareOfTotal);
 
     return (
       <g>
@@ -341,12 +343,12 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
           stroke="none"
         />
 
-        {width >= 92 && height >= 26 && (
+        {width >= 92 && height >= 34 && (
           <text
-            x={x + 10}
-            y={y + 17}
+            x={x + 12}
+            y={y + 14}
             fill="#ffffff"
-            fontSize={10}
+            fontSize={11}
             fontWeight={700}
             pointerEvents="none"
           >
@@ -354,18 +356,17 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
           </text>
         )}
 
-        {width >= 92 && height >= 26 && (
+        {width >= 92 && height >= 34 && (
           <text
-            x={x + width - 10}
-            y={y + 17}
+            x={x + 12}
+            y={y + 27}
             fill="#ffffff"
-            fontSize={9}
-            fontWeight={700}
-            textAnchor="end"
-            opacity={0.95}
+            fontSize={9.5}
+            fontWeight={600}
+            opacity={0.92}
             pointerEvents="none"
           >
-            {formatPercent(shareOfTotal)}
+            {categoryValue} • {categoryShare}
           </text>
         )}
       </g>
