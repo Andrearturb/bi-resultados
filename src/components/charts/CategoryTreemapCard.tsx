@@ -16,6 +16,7 @@ type TreemapNode = CategoryTreemapNode & {
   value?: number;
   fill?: string;
   stroke?: string;
+  isOtherCategory?: boolean;
 };
 
 const CATEGORY_COLORS = [
@@ -34,9 +35,15 @@ const formatPercent = (value?: number) =>
 const formatNumber = (value?: number) =>
   typeof value === 'number' ? value.toLocaleString('pt-BR') : '-';
 
+const getCategoryHeaderLabel = (name: string, width: number) => {
+  const maxLength = width >= 220 ? 28 : width >= 150 ? 22 : 16;
+
+  return name.length > maxLength ? `${name.slice(0, maxLength - 1)}…` : name;
+};
+
 const getVisibleSubcategoryCount = (categoryShare: number): number => {
-  if (categoryShare >= 15) return 3;
-  if (categoryShare >= 8) return 2;
+  if (categoryShare >= 20) return 3;
+  if (categoryShare >= 10) return 2;
   if (categoryShare >= 5) return 1;
   return 0;
 };
@@ -57,7 +64,8 @@ const buildCategoryChildren = (
   const result: CategoryTreemapNode[] = visibleChildren.map(
     (child, childIndex) => ({
       ...child,
-      fill: `${color}${childIndex === 0 ? '30' : childIndex === 1 ? '42' : '52'}`,
+      fill: `${color}${childIndex === 0 ? '28' : childIndex === 1 ? '20' : '16'}`,
+      stroke: 'rgba(255,255,255,0.9)',
     })
   );
 
@@ -80,41 +88,12 @@ const buildCategoryChildren = (
       total: hiddenValue,
       shareOfCategory: hiddenShareOfCategory,
       shareOfTotal: hiddenShareOfTotal,
-      fill: `${color}18`,
-      stroke: 'transparent',
+      fill: `${color}10`,
+      stroke: 'rgba(255,255,255,0.72)',
     });
   }
 
   return result;
-};
-
-const consolidateSubcategories = (categories: CategoryTreemapNode[]): any => {
-  const consolidated: Record<string, any> = {};
-
-  for (const category of categories) {
-    for (const subcategory of category.children ?? []) {
-      const key = subcategory.subcategory || subcategory.name;
-
-      if (!consolidated[key]) {
-        consolidated[key] = {
-          ...subcategory,
-          value: 0,
-          total: 0,
-          shareOfTotal: 0,
-          shareOfCategory: 0,
-        };
-      }
-
-      consolidated[key].value += subcategory.value;
-      consolidated[key].total += subcategory.value;
-      consolidated[key].shareOfTotal += subcategory.shareOfTotal;
-      consolidated[key].shareOfCategory += subcategory.shareOfCategory;
-    }
-  }
-
-  return Object.values(consolidated)
-    .sort((a: any, b: any) => b.value - a.value)
-    .slice(0, 2);
 };
 
 const transformValueForLayout = (value: number): number => {
@@ -122,13 +101,13 @@ const transformValueForLayout = (value: number): number => {
   return Math.sqrt(value);
 };
 
-const buildExecutiveTreemap = (tree: CategoryTreemapNode[]) => {
+const buildExecutiveTreemap = (tree: CategoryTreemapNode[]): TreemapNode[] => {
   const sortedCategories = [...tree].sort((a, b) => b.value - a.value);
 
   const mainCategories = sortedCategories.filter((c) => c.shareOfTotal >= 5);
   const smallCategories = sortedCategories.filter((c) => c.shareOfTotal < 5);
 
-  const result: CategoryTreemapNode[] = mainCategories.map(
+  const result: TreemapNode[] = mainCategories.map(
     (category, index) => {
       const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
       return {
@@ -157,45 +136,6 @@ const buildExecutiveTreemap = (tree: CategoryTreemapNode[]) => {
       0
     );
 
-    const consolidatedSubcategories = consolidateSubcategories(smallCategories);
-    const consolidatedValue = consolidatedSubcategories.reduce(
-      (sum: number, item: any) => sum + item.value,
-      0
-    );
-
-    const othersChildren: CategoryTreemapNode[] = consolidatedSubcategories.map(
-      (subcategory: any) => ({
-        ...subcategory,
-        category: 'Outras',
-        fill: '#9CA3AF',
-        value: transformValueForLayout(subcategory.value),
-      })
-    );
-
-    if (
-      consolidatedValue < othersValue &&
-      consolidatedSubcategories.length > 0
-    ) {
-      const remainingValue = othersValue - consolidatedValue;
-      othersChildren.push({
-        name: 'Outras subcategorias',
-        category: 'Outras',
-        subcategory: 'Outras subcategorias',
-        value: transformValueForLayout(remainingValue),
-        total: remainingValue,
-        shareOfCategory: 100 - consolidatedSubcategories.reduce(
-          (sum: number, item: any) => sum + item.shareOfCategory,
-          0
-        ),
-        shareOfTotal: othersShareOfTotal - consolidatedSubcategories.reduce(
-          (sum: number, item: any) => sum + item.shareOfTotal,
-          0
-        ),
-        fill: '#D1D5DB',
-        stroke: 'transparent',
-      });
-    }
-
     result.push({
       name: 'Outras',
       category: 'Outras',
@@ -203,9 +143,9 @@ const buildExecutiveTreemap = (tree: CategoryTreemapNode[]) => {
       total: othersTotal,
       shareOfCategory: 100,
       shareOfTotal: othersShareOfTotal,
-      fill: '#6B7280',
-      stroke: 'transparent',
-      children: othersChildren,
+      fill: '#94A3B8',
+      stroke: '#E2E8F0',
+      isOtherCategory: true,
     });
   }
 
@@ -272,6 +212,7 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
     shareOfTotal = 0,
     fill = '#E8F1FA',
     subcategory,
+    isOtherCategory,
   } = props;
 
   if (width < 46 || height < 34) return null;
@@ -281,8 +222,90 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
 
   const label = subcategory ?? name;
 
+  if (isOtherCategory) {
+    const headerHeight = 26;
+    const bodyValue = formatNumber(total ?? value);
+    const bodyShare = formatPercent(shareOfTotal);
+
+    return (
+      <g>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill="#E5E7EB"
+          stroke="none"
+          rx={14}
+          ry={14}
+        />
+
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={headerHeight}
+          fill="#64748B"
+          stroke="none"
+          rx={0}
+          ry={0}
+        />
+
+        {/* faixa para esconder os cantos inferiores arredondados do header */}
+        <rect
+          x={x}
+          y={y + headerHeight}
+          width={width}
+          height={14}
+          fill="#E5E7EB"
+          stroke="none"
+        />
+
+        <text
+          x={x + 10}
+          y={y + 17}
+          fill="#ffffff"
+          fontSize={10}
+          fontWeight={700}
+          pointerEvents="none"
+        >
+          Outras categorias
+        </text>
+
+        <text
+          x={x + width - 10}
+          y={y + 17}
+          fill="#ffffff"
+          fontSize={9}
+          fontWeight={700}
+          textAnchor="end"
+          opacity={0.95}
+          pointerEvents="none"
+        >
+          {formatPercent(shareOfTotal)}
+        </text>
+
+        <text
+          x={x + width / 2}
+          y={y + headerHeight + (height - headerHeight) / 2 - 4}
+          fill="#0f172a"
+          textAnchor="middle"
+          pointerEvents="none"
+        >
+          <tspan x={x + width / 2} fontSize={22} fontWeight={900}>
+            {bodyValue}
+          </tspan>
+          <tspan x={x + width / 2} dy="24" fontSize={11} fontWeight={600}>
+            {bodyShare} do total
+          </tspan>
+        </text>
+      </g>
+    );
+  }
+
   if (isCategory) {
-    const headerHeight = 40;
+    const headerHeight = 26;
+    const labelText = getCategoryHeaderLabel(label, width);
 
     return (
       <g>
@@ -293,6 +316,8 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
           height={height}
           fill="#f8f8f8"
           stroke="none"
+          rx={14}
+          ry={14}
         />
 
         <rect
@@ -302,41 +327,45 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
           height={headerHeight}
           fill={fill}
           stroke="none"
+          rx={0}
+          ry={0}
         />
 
+        {/* faixa para esconder os cantos inferiores arredondados do header */}
         <rect
           x={x}
           y={y + headerHeight}
           width={width}
-          height={1}
-          fill="rgba(255,255,255,0.4)"
+          height={14}
+          fill="#f8f8f8"
           stroke="none"
         />
 
-        {width >= 110 && height >= 70 && (
+        {width >= 92 && height >= 26 && (
           <text
             x={x + 10}
-            y={y + 22}
+            y={y + 17}
             fill="#ffffff"
-            fontSize={11}
+            fontSize={10}
             fontWeight={700}
             pointerEvents="none"
           >
-            {label.substring(0, 28)}
+            {labelText}
           </text>
         )}
 
-        {width >= 130 && height >= 70 && (
+        {width >= 92 && height >= 26 && (
           <text
-            x={x + 10}
-            y={y + 36}
+            x={x + width - 10}
+            y={y + 17}
             fill="#ffffff"
-            fontSize={10}
-            fontWeight={600}
+            fontSize={9}
+            fontWeight={700}
+            textAnchor="end"
             opacity={0.95}
             pointerEvents="none"
           >
-            {formatNumber(total ?? value)} • {formatPercent(shareOfTotal)}
+            {formatPercent(shareOfTotal)}
           </text>
         )}
       </g>
@@ -345,10 +374,26 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
 
   if (!isSubcategory) return null;
 
-  const showFull = width >= 150 && height >= 95;
-  const showMedium = width >= 115 && height >= 66;
-  const showValueOnly = width >= 72 && height >= 44;
-  const showNameOnly = width >= 50 && height >= 30;
+  if (width < 70 || height < 45) {
+    return (
+      <g>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill={fill}
+          stroke="none"
+          rx={10}
+          ry={10}
+        />
+      </g>
+    );
+  }
+
+  const showFull = width >= 160 && height >= 96;
+  const showMedium = width >= 120 && height >= 70;
+  const showCompact = width >= 90 && height >= 52;
 
   return (
     <g>
@@ -359,22 +404,24 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
         height={height}
         fill={fill}
         stroke="none"
+        rx={10}
+        ry={10}
       />
 
       {showFull && (
         <text
-          x={x + 10}
-          y={y + 65}
+          x={x + 12}
+          y={y + 62}
           fill="#0f172a"
-          fontSize={12}
+          fontSize={11}
           fontWeight={700}
           pointerEvents="none"
         >
-          <tspan x={x + 10}>{label.substring(0, 25)}</tspan>
-          <tspan x={x + 10} dy="24" fontSize={18} fontWeight={900}>
+          <tspan x={x + 12}>{label.substring(0, 22)}</tspan>
+          <tspan x={x + 12} dy="21" fontSize={17} fontWeight={900}>
             {formatNumber(total ?? value)}
           </tspan>
-          <tspan x={x + 10} dy="16" fontSize={11} fontWeight={600}>
+          <tspan x={x + 12} dy="15" fontSize={10} fontWeight={600}>
             {formatPercent(shareOfTotal)}
           </tspan>
         </text>
@@ -382,43 +429,30 @@ const TreemapCell = (props: Partial<TreemapNode>) => {
 
       {!showFull && showMedium && (
         <text
-          x={x + 10}
-          y={y + 55}
+          x={x + 12}
+          y={y + 50}
           fill="#0f172a"
-          fontSize={11}
+          fontSize={10}
           fontWeight={700}
           pointerEvents="none"
         >
-          <tspan x={x + 10}>{label.substring(0, 18)}</tspan>
-          <tspan x={x + 10} dy={20} fontSize={16} fontWeight={900}>
+          <tspan x={x + 12}>{label.substring(0, 16)}</tspan>
+          <tspan x={x + 12} dy={18} fontSize={15} fontWeight={900}>
             {formatNumber(total ?? value)}
           </tspan>
         </text>
       )}
 
-      {!showFull && !showMedium && showValueOnly && (
+      {!showFull && !showMedium && showCompact && (
         <text
-          x={x + 10}
-          y={y + height / 2 + 6}
+          x={x + 12}
+          y={y + height / 2 + 5}
           fill="#0f172a"
-          fontSize={14}
+          fontSize={13}
           fontWeight={900}
           pointerEvents="none"
         >
           {formatNumber(total ?? value)}
-        </text>
-      )}
-
-      {!showFull && !showMedium && !showValueOnly && showNameOnly && (
-        <text
-          x={x + 10}
-          y={y + height / 2 + 4}
-          fill="#0f172a"
-          fontSize={9}
-          fontWeight={700}
-          pointerEvents="none"
-        >
-          {label.substring(0, 12)}
         </text>
       )}
     </g>

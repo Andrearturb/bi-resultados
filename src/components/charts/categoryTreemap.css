@@ -7,11 +7,11 @@
   width: 100%;
   min-height: 580px;
   padding: 0;
-  border: 1px solid rgba(5, 56, 98, 0.08);
-  border-radius: 24px;
+  border: 1px solid rgba(5, 56, 98, 0.1);
+  border-radius: 28px;
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(248, 251, 252, 0.9), #ffffff 38%),
+    linear-gradient(180deg, rgba(248, 251, 252, 0.96), #ffffff 42%),
     #ffffff;
 }
 
@@ -47,6 +47,10 @@
   color: #64748b;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.chart-card--treemap svg g {
+  isolation: isolate;
 }
 
 .category-treemap-tooltip {
@@ -104,7 +108,7 @@
   .treemap-shell {
     min-height: 460px;
     padding: 0;
-    border-radius: 18px;
+    border-radius: 20px;
   }
 
   .category-treemap-tooltip {
