@@ -1,22 +1,27 @@
 # BI Resultados
 
-Front-end corporativo em React + TypeScript para importar uma planilha local e transformar os dados em filtros, KPIs e gráficos de performance.
+Aplicação web em React + TypeScript para análise de planilhas de operação e resultados. O app roda totalmente no navegador, sem backend, e transforma a planilha em filtros, KPIs e visualizações executivas.
 
-## O que o app faz
+## Principais recursos
 
-- Importa uma planilha `.xlsx` no navegador, sem backend e sem banco.
-- Processa os dados localmente e gera filtros dinâmicos.
-- Exibe volume, taxa de conclusão por região, evolução mensal, ranking de fornecedores e categorias mais recorrentes.
-- Inclui cards com métricas, barras de progresso, tabela de performance e áreas de insight.
+- Importação local de planilha `.xlsx`.
+- Normalização de status da coluna E da planilha.
+- Filtros por região, status, categoria, subcategoria, fornecedor, analista e período.
+- Cards executivos com volume, concluídos e taxa de conclusão.
+- Gráficos de praça, evolução mensal e ranking de performance.
+- Treemap hierárquico de categoria e subcategoria.
+- Resumo executivo dinâmico com concentração e insights.
 
-## Como executar
+## Como executar localmente
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Build para Docker
+Depois, abra o endereço exibido pelo Vite no terminal.
+
+## Build e execução com Docker
 
 ```bash
 docker compose up --build
@@ -24,11 +29,13 @@ docker compose up --build
 
 Abra `http://localhost:8080`.
 
-## Observação
+## Dados esperados na planilha
 
-O aplicativo depende da importação manual da planilha pelo usuário.
+- O status fica na coluna E.
+- A aplicação usa os campos de data, região, categoria, subcategoria, fornecedor e analista para montar os gráficos e filtros.
+- O arquivo é processado no navegador; nada é enviado para um servidor.
 
-## Campos para ajustar depois
+## Personalização
 
 - `src/config/branding.ts` centraliza nome da empresa, período e cores.
-- Os valores vêm com placeholder para facilitar a modificação futura.
+- Ajuste esse arquivo para adaptar o app à identidade da sua operação.
