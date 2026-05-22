@@ -1,0 +1,5 @@
+services:
+  bi-resultados:
+    build: .
+    ports:
+      - "8080:80"
