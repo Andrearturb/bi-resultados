@@ -14,6 +14,7 @@ export type SpreadsheetRecord = {
   requester: string;
   requestDate: string | null;
   conclusionDate: string | null;
+  createdOn: string | null;
   visitDate: string | null;
   slaProgress: string;
   rawStatus?: string;

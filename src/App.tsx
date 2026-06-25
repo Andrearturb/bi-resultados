@@ -28,7 +28,7 @@ export const App = () => {
 
   const filteredRecords = useMemo(() => applyFilters(records, filters), [filters, records]);
   const metrics = useMemo(() => buildMetrics(filteredRecords), [filteredRecords]);
-  const regions = useMemo(() => buildRegionSeries(filteredRecords), [filteredRecords]);
+  const regions = useMemo(() => buildRegionSeries(filteredRecords, records, filters), [filteredRecords, records, filters]);
   const months = useMemo(() => buildMonthlySeries(filteredRecords), [filteredRecords]);
   const categoryTree = useMemo(() => buildCategoryTreemap(filteredRecords), [filteredRecords]);
   const providers = useMemo(() => buildProviderRanking(filteredRecords), [filteredRecords]);

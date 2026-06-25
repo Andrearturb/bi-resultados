@@ -26,6 +26,7 @@ type HeaderMap = {
   requester: number | null;
   requestDate: number | null;
   conclusionDate: number | null;
+  createdOn: number | null;
   visitDate: number | null;
   slaProgress: number | null;
 };
@@ -56,6 +57,16 @@ const toIso = (value: unknown) => {
   const text = normalizeText(value);
   if (!text) {
     return null;
+  }
+
+  // Handle text format like "Data de Conclusão: 25/06/2026 - 13:18"
+  // Extract date/time portion: dd/mm/yyyy - HH:MM or dd/mm/yyyy
+  const textDateMatch = text.match(/(\d{2})\/(\d{2})\/(\d{4})(?:\s*[-–]\s*(\d{2}):(\d{2}))?/);
+  if (textDateMatch) {
+    const [, day, month, year, hour = '00', minute = '00'] = textDateMatch;
+    const iso = `${year}-${month}-${day}T${hour}:${minute}:00`;
+    const parsed = new Date(iso);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
   }
 
   const parsedDate = new Date(text);
@@ -123,7 +134,9 @@ const buildHeaderMap = (headers: unknown[]): HeaderMap => {
     analyst: findIndex('analista responsavel'),
     requester: findIndex('requisitante'),
     requestDate: findIndex('data da requisicao'),
-    conclusionDate: findIndex('data da conclusao'),
+    // Column J (index 9) holds the conclusion date as text; it has no header name in the sheet
+    conclusionDate: findIndex('data da conclusao') ?? 9,
+    createdOn: findIndex('created on', 'criado em', 'data de criacao', 'data criacao'),
     visitDate: findIndex('data da visita'),
     slaProgress: findIndex('progresso do sla'),
   };
@@ -148,6 +161,7 @@ export const parseSpreadsheet = async (file: File): Promise<SpreadsheetRecord[]>
       const status = statusDisplayLabel(rawStatusText);
       const requestDate = toIso(getValue(row, map.requestDate));
       const conclusionDate = toIso(getValue(row, map.conclusionDate));
+      const createdOn = toIso(getValue(row, map.createdOn));
       const visitDate = toIso(getValue(row, map.visitDate));
 
       return {
@@ -164,6 +178,7 @@ export const parseSpreadsheet = async (file: File): Promise<SpreadsheetRecord[]>
         requester: normalizeText(getValue(row, map.requester)) || 'Não informado',
         requestDate,
         conclusionDate,
+        createdOn,
         visitDate,
         slaProgress: normalizeText(getValue(row, map.slaProgress)),
         rawStatus: status,
@@ -237,17 +252,70 @@ export const buildMetrics = (records: SpreadsheetRecord[]): DashboardMetrics => 
   };
 };
 
-export const buildRegionSeries = (records: SpreadsheetRecord[]): RegionPoint[] => {
+export const buildRegionSeries = (_records: SpreadsheetRecord[], allRecords: SpreadsheetRecord[], filters: DashboardFilters): RegionPoint[] => {
+  // volume: chamados criados no período filtrado (coluna BY = createdOn), usando os filtros não-data aplicados
+  // concluded: chamados concluídos no período filtrado (coluna J = conclusionDate), mesmos filtros não-data
+
+  // Determina o intervalo de datas do filtro
+  const startDate = filters.startDate ? new Date(`${filters.startDate}T00:00:00`) : null;
+  const endDate = filters.endDate ? new Date(`${filters.endDate}T23:59:59.999`) : null;
+
+  // Aplica todos os filtros exceto o de data aos allRecords para calcular concluídos por conclusionDate
+  const baseRecords = allRecords.filter((record) => {
+    const normalizedQuery = filters.query.trim().toLowerCase();
+    const matchesQuery =
+      !normalizedQuery ||
+      [record.ticketId, record.status, record.region, record.category, record.subcategory, record.provider, record.analyst]
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedQuery);
+
+    const matchesRegion = filters.region === 'all' || record.region === filters.region;
+    const matchesStatus = filters.status === 'all' || record.status === filters.status;
+    const matchesCategory = filters.category === 'all' || record.category === filters.category;
+    const matchesProvider = filters.provider === 'all' || record.provider === filters.provider;
+    const matchesAnalyst = filters.analyst === 'all' || record.analyst === filters.analyst;
+
+    return matchesQuery && matchesRegion && matchesStatus && matchesCategory && matchesProvider && matchesAnalyst;
+  });
+
+  // Volume: registros de `records` (já filtrados por data de criação via requestDate em applyFilters)
+  // mas usando createdOn para o período quando disponível; caso createdOn seja nulo, cai no requestDate
+  // Na prática `records` já é o filteredRecords de applyFilters, mas o filtro de data lá usa requestDate.
+  // Aqui recalculamos o volume filtrando por createdOn dentro do intervalo do filtro.
+  const volumeRecords = baseRecords.filter((record) => {
+    const dateStr = record.createdOn ?? record.requestDate;
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return false;
+    if (startDate && date < startDate) return false;
+    if (endDate && date > endDate) return false;
+    return true;
+  });
+
+  // Concluded: registros de baseRecords cujo conclusionDate cai no período filtrado
+  const concludedRecords = baseRecords.filter((record) => {
+    if (record.statusGroup !== 'concluded') return false;
+    const dateStr = record.conclusionDate;
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return false;
+    if (startDate && date < startDate) return false;
+    if (endDate && date > endDate) return false;
+    return true;
+  });
+
   const accumulator = new Map<string, { volume: number; concluded: number; inProgress: number }>();
 
-  for (const record of records) {
+  for (const record of volumeRecords) {
     const current = accumulator.get(record.region) ?? { volume: 0, concluded: 0, inProgress: 0 };
     current.volume += 1;
-    if (record.statusGroup === 'concluded') {
-      current.concluded += 1;
-    } else if (record.statusGroup === 'in_progress') {
-      current.inProgress += 1;
-    }
+    accumulator.set(record.region, current);
+  }
+
+  for (const record of concludedRecords) {
+    const current = accumulator.get(record.region) ?? { volume: 0, concluded: 0, inProgress: 0 };
+    current.concluded += 1;
     accumulator.set(record.region, current);
   }
 
@@ -561,7 +629,7 @@ export const buildExecutiveSummary = (allRecords: SpreadsheetRecord[], filteredR
 export const buildAnalystRanking = (records: SpreadsheetRecord[]) => buildRank(records, (record) => record.analyst);
 
 export const buildInsight = (records: SpreadsheetRecord[]) => {
-  const regionRanking = buildRegionSeries(records);
+  const regionRanking = buildRegionSeries(records, records, defaultFilters);
   const providerRanking = buildProviderRanking(records);
   const openIssues = records.filter(
     (record) => record.statusGroup === 'in_progress' || record.statusGroup === 'backlog'
