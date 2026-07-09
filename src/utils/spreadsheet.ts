@@ -685,7 +685,8 @@ export const buildAnalystProductivity = (records: SpreadsheetRecord[], filters: 
 
   const classify = (r: { concluded: number; avgDays: number | null }): AnalystProductivity['classification'] => {
     const highVol = r.concluded >= avgConcluded;
-    const fastTime = r.avgDays === null || r.avgDays <= avgDays;
+    // null avgDays = no measurable time → never treated as fast (conservative)
+    const fastTime = r.avgDays !== null && r.avgDays <= avgDays;
     if (highVol && fastTime) return 'high';
     if (highVol && !fastTime) return 'volume';
     if (!highVol && fastTime) return 'fast';
@@ -757,7 +758,8 @@ export const buildSupplierProductivity = (records: SpreadsheetRecord[], filters:
 
   const classify = (r: { concluded: number; avgDays: number | null }): SupplierProductivity['classification'] => {
     const highVol = r.concluded >= avgConcluded;
-    const fastTime = r.avgDays === null || r.avgDays <= avgDays;
+    // null avgDays = no measurable time → never treated as fast (conservative)
+    const fastTime = r.avgDays !== null && r.avgDays <= avgDays;
     if (highVol && fastTime) return 'high';
     if (highVol && !fastTime) return 'volume';
     if (!highVol && fastTime) return 'fast';
