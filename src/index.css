@@ -679,6 +679,80 @@ th {
   padding: 48px 24px;
 }
 
+/* ── Supplier Productivity Block ─────────────────────────────────────────── */
+
+.supplier-productivity__body {
+  display: grid;
+  grid-template-columns: 45fr 55fr;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.supplier-productivity__col-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.supplier-productivity__col-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.84rem;
+}
+
+@media (max-width: 1100px) {
+  .supplier-productivity__body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Supplier classification legend ─────────────────────────────────────── */
+
+.supplier-legend {
+  margin-top: 20px;
+  padding: 14px 16px;
+  background: rgba(5, 56, 98, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.supplier-legend__title {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.supplier-legend__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.supplier-legend__item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.supplier-legend__desc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.supplier-legend__note {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
 @media (max-width: 1280px) {
   .filter-bar {
     grid-template-columns: repeat(2, minmax(0, 1fr));

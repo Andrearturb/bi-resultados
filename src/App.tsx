@@ -3,6 +3,7 @@ import { ChartsGrid } from './components/ChartsGrid';
 import { FilterBar } from './components/FilterBar';
 import { KpiCard } from './components/KpiCard';
 import { PerformanceTable } from './components/PerformanceTable';
+import { SupplierProductivityBlock } from './components/SupplierProductivityBlock';
 import { UploadPanel } from './components/UploadPanel';
 import { branding } from './config/branding';
 import { formatDateInput } from './utils/date';
@@ -12,8 +13,8 @@ import {
   buildCategoryTreemap,
   buildExecutiveSummary,
   buildMetrics,
-  buildProviderRanking,
   buildRegionSeries,
+  buildSupplierProductivity,
   defaultFilters,
   parseSpreadsheet,
 } from './utils/spreadsheet';
@@ -26,34 +27,34 @@ export const App = () => {
   const [fileName, setFileName] = useState('');
   const [globalStartDate, setGlobalStartDate] = useState('2026-01-01');
 
-  // Filtered records: all normal filters applied
+  // Filtered records: all normal filters applied (date filter uses requestDate/createdOn)
   const filteredRecords = useMemo(() => applyFilters(records, filters), [filters, records]);
+
+  // Context-only records: all non-date filters applied, no date filtering
+  // Used by supplier productivity so it can filter by conclusionDate instead of requestDate
+  const contextRecords = useMemo(
+    () => applyFilters(records, { ...filters, startDate: '', endDate: '' }),
+    [records, filters],
+  );
 
   // Global records: context filters (no dates) + globalStartDate only
   const globalRecords = useMemo(() => {
-    // Apply the same non-date filters as the main filter bar
-    const contextFiltered = applyFilters(records, {
-      ...filters,
-      startDate: '',
-      endDate: '',
-    });
-
-    if (!globalStartDate) return contextFiltered;
+    if (!globalStartDate) return contextRecords;
     const start = new Date(`${globalStartDate}T00:00:00`);
-    return contextFiltered.filter((r) => {
+    return contextRecords.filter((r) => {
       const dateStr = r.createdOn ?? r.requestDate;
       if (!dateStr) return true;
       const d = new Date(dateStr);
       return !Number.isNaN(d.getTime()) && d >= start;
     });
-  }, [records, filters, globalStartDate]);
+  }, [contextRecords, globalStartDate]);
 
   const metrics = useMemo(() => buildMetrics(filteredRecords), [filteredRecords]);
   const globalMetrics = useMemo(() => buildMetrics(globalRecords), [globalRecords]);
 
   const regions = useMemo(() => buildRegionSeries(filteredRecords, records, filters), [filteredRecords, records, filters]);
   const categoryTree = useMemo(() => buildCategoryTreemap(filteredRecords), [filteredRecords]);
-  const providers = useMemo(() => buildProviderRanking(filteredRecords), [filteredRecords]);
+  const supplierProductivity = useMemo(() => buildSupplierProductivity(contextRecords, filters), [contextRecords, filters]);
   const analysts = useMemo(() => buildAnalystRanking(filteredRecords), [filteredRecords]);
   const executiveSummary = useMemo(() => buildExecutiveSummary(records, filteredRecords, filters), [records, filteredRecords, filters]);
 
@@ -180,7 +181,7 @@ export const App = () => {
 
             <ChartsGrid regions={regions} categoryTree={categoryTree} executiveSummary={executiveSummary} />
 
-            <PerformanceTable rows={providers} title="Fornecedores com mais impacto" subtitle="Ranking por volume, taxa de conclusão e tempo médio" />
+            <SupplierProductivityBlock suppliers={supplierProductivity} />
             <PerformanceTable rows={analysts} title="Analistas responsáveis" subtitle="Leitura de produtividade individual após os filtros atuais" />
           </>
         ) : (

@@ -15,6 +15,7 @@ export type SpreadsheetRecord = {
   requestDate: string | null;
   conclusionDate: string | null;
   createdOn: string | null;
+  inAttendanceDate: string | null;
   visitDate: string | null;
   slaProgress: string;
   rawStatus?: string;
@@ -48,6 +49,13 @@ export type RankedItem = {
   inProgress: number;
   completionRate: number;
   averageDaysToConclusion: number | null;
+};
+
+export type SupplierProductivity = {
+  name: string;
+  concluded: number;
+  avgDays: number | null;
+  classification: 'high' | 'volume' | 'fast' | 'slow';
 };
 
 export type MonthlyPoint = {
