@@ -12,6 +12,7 @@ import type {
   RegionPoint,
   SpreadsheetRecord,
   SupplierProductivity,
+  AnalystProductivity,
 } from '../types';
 
 type HeaderMap = {
@@ -633,6 +634,68 @@ export const buildExecutiveSummary = (allRecords: SpreadsheetRecord[], filteredR
 };
 
 export const buildAnalystRanking = (records: SpreadsheetRecord[]) => buildRank(records, (record) => record.analyst);
+
+export const buildAnalystProductivity = (records: SpreadsheetRecord[], filters: DashboardFilters): AnalystProductivity[] => {
+  // Step 1: only concluded tickets
+  const concludedAll = records.filter((r) => r.statusGroup === 'concluded');
+
+  // Step 2: filter by conclusionDate (col J) within the selected period
+  const startDate = filters.startDate ? new Date(`${filters.startDate}T00:00:00`) : null;
+  const endDate = filters.endDate ? new Date(`${filters.endDate}T23:59:59.999`) : null;
+
+  const concluded = concludedAll.filter((r) => {
+    if (!r.conclusionDate) return false;
+    const d = new Date(r.conclusionDate);
+    if (Number.isNaN(d.getTime())) return false;
+    if (startDate && d < startDate) return false;
+    if (endDate && d > endDate) return false;
+    return true;
+  });
+
+  const acc = new Map<string, { concluded: number; days: number[] }>();
+  for (const record of concluded) {
+    const name = record.analyst || 'Não informado';
+    const current = acc.get(name) ?? { concluded: 0, days: [] };
+    current.concluded += 1;
+
+    // Duration: col BY (createdOn) → col J (conclusionDate)
+    // col H (inAttendanceDate) is NOT used for analysts
+    const start = record.createdOn;
+    const end = record.conclusionDate;
+    if (start && end) {
+      const d = daysBetween(start, end);
+      // Guard against negative durations (start after end)
+      if (d !== null && d >= 0) current.days.push(d);
+    }
+
+    acc.set(name, current);
+  }
+
+  const rows = [...acc.entries()].map(([name, val]) => ({
+    name,
+    concluded: val.concluded,
+    avgDays: val.days.length ? val.days.reduce((s, v) => s + v, 0) / val.days.length : null,
+  }));
+
+  if (rows.length === 0) return [];
+
+  const avgConcluded = rows.reduce((s, r) => s + r.concluded, 0) / rows.length;
+  const validDays = rows.filter((r) => r.avgDays !== null).map((r) => r.avgDays as number);
+  const avgDays = validDays.length ? validDays.reduce((s, v) => s + v, 0) / validDays.length : 0;
+
+  const classify = (r: { concluded: number; avgDays: number | null }): AnalystProductivity['classification'] => {
+    const highVol = r.concluded >= avgConcluded;
+    const fastTime = r.avgDays === null || r.avgDays <= avgDays;
+    if (highVol && fastTime) return 'high';
+    if (highVol && !fastTime) return 'volume';
+    if (!highVol && fastTime) return 'fast';
+    return 'slow';
+  };
+
+  return rows
+    .map((r) => ({ ...r, classification: classify(r) }))
+    .sort((a, b) => b.concluded - a.concluded || (a.avgDays ?? Infinity) - (b.avgDays ?? Infinity));
+};
 
 // Removes leading CPF (000.000.000-00) or CNPJ (00.000.000/0000-00) and separator from provider names
 export const normalizeSupplierName = (raw: string): string => {

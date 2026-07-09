@@ -2,14 +2,14 @@ import { useMemo, useState } from 'react';
 import { ChartsGrid } from './components/ChartsGrid';
 import { FilterBar } from './components/FilterBar';
 import { KpiCard } from './components/KpiCard';
-import { PerformanceTable } from './components/PerformanceTable';
+import { AnalystProductivityBlock } from './components/AnalystProductivityBlock';
 import { SupplierProductivityBlock } from './components/SupplierProductivityBlock';
 import { UploadPanel } from './components/UploadPanel';
 import { branding } from './config/branding';
 import { formatDateInput } from './utils/date';
 import {
   applyFilters,
-  buildAnalystRanking,
+  buildAnalystProductivity,
   buildCategoryTreemap,
   buildExecutiveSummary,
   buildMetrics,
@@ -55,7 +55,7 @@ export const App = () => {
   const regions = useMemo(() => buildRegionSeries(filteredRecords, records, filters), [filteredRecords, records, filters]);
   const categoryTree = useMemo(() => buildCategoryTreemap(filteredRecords), [filteredRecords]);
   const supplierProductivity = useMemo(() => buildSupplierProductivity(contextRecords, filters), [contextRecords, filters]);
-  const analysts = useMemo(() => buildAnalystRanking(filteredRecords), [filteredRecords]);
+  const analystProductivity = useMemo(() => buildAnalystProductivity(contextRecords, filters), [contextRecords, filters]);
   const executiveSummary = useMemo(() => buildExecutiveSummary(records, filteredRecords, filters), [records, filteredRecords, filters]);
 
   const handleFile = async (file: File) => {
@@ -182,7 +182,7 @@ export const App = () => {
             <ChartsGrid regions={regions} categoryTree={categoryTree} executiveSummary={executiveSummary} />
 
             <SupplierProductivityBlock suppliers={supplierProductivity} />
-            <PerformanceTable rows={analysts} title="Analistas responsáveis" subtitle="Leitura de produtividade individual após os filtros atuais" />
+            <AnalystProductivityBlock analysts={analystProductivity} />
           </>
         ) : (
           <section className="empty-state">

@@ -679,7 +679,52 @@ th {
   padding: 48px 24px;
 }
 
-/* ── Supplier Productivity Block ─────────────────────────────────────────── */
+/* ── Region Volume totals ────────────────────────────────────────────────── */
+
+.region-totals {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.region-totals__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border-left: 3px solid;
+}
+
+.region-totals__item--volume {
+  background: rgba(8, 43, 91, 0.06);
+  border-color: #082B5B;
+}
+
+.region-totals__item--concluded {
+  background: rgba(12, 122, 117, 0.07);
+  border-color: #0C7A75;
+}
+
+.region-totals__label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.region-totals__value {
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.region-totals__item--volume .region-totals__value {
+  color: #082B5B;
+}
+
+.region-totals__item--concluded .region-totals__value {
+  color: #0C7A75;
+}
 
 .supplier-productivity__body {
   display: grid;

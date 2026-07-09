@@ -60,6 +60,9 @@ const RegionTooltip = ({
 };
 
 export const RegionVolumeCard = ({ regions }: Props) => {
+  const totalVolume = regions.reduce((sum, r) => sum + r.volume, 0);
+  const totalConcluded = regions.reduce((sum, r) => sum + r.concluded, 0);
+
   return (
     <article className="chart-card chart-card--wide">
       <div className="chart-header">
@@ -134,6 +137,17 @@ export const RegionVolumeCard = ({ regions }: Props) => {
           />
         </BarChart>
       </ResponsiveContainer>
+
+      <div className="region-totals">
+        <div className="region-totals__item region-totals__item--volume">
+          <span className="region-totals__label">Total de volume</span>
+          <strong className="region-totals__value">{totalVolume.toLocaleString('pt-BR')}</strong>
+        </div>
+        <div className="region-totals__item region-totals__item--concluded">
+          <span className="region-totals__label">Total de concluídos</span>
+          <strong className="region-totals__value">{totalConcluded.toLocaleString('pt-BR')}</strong>
+        </div>
+      </div>
     </article>
   );
 };

@@ -58,6 +58,13 @@ export type SupplierProductivity = {
   classification: 'high' | 'volume' | 'fast' | 'slow';
 };
 
+export type AnalystProductivity = {
+  name: string;
+  concluded: number;
+  avgDays: number | null;
+  classification: 'high' | 'volume' | 'fast' | 'slow';
+};
+
 export type MonthlyPoint = {
   monthKey: string;
   month: string;
