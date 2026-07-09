@@ -1,6 +1,7 @@
 type Props = {
   label: string;
   value: string;
+  globalValue?: string;
   helper: string;
   progress: number;
   tone?: 'teal' | 'cyan' | 'amber' | 'rose';
@@ -13,10 +14,20 @@ const tones = {
   rose: 'linear-gradient(135deg, rgba(171,55,73,0.18), rgba(171,55,73,0.02))',
 } as const;
 
-export const KpiCard = ({ label, value, helper, progress, tone = 'teal' }: Props) => (
+export const KpiCard = ({ label, value, globalValue, helper, progress, tone = 'teal' }: Props) => (
   <article className="kpi-card" style={{ background: tones[tone] }}>
     <span className="kpi-label">{label}</span>
-    <strong className="kpi-value">{value}</strong>
+    <strong className="kpi-value">
+      {globalValue !== undefined ? (
+        <>
+          {value}
+          <span className="kpi-value__separator"> / </span>
+          <span className="kpi-value__global">{globalValue}</span>
+        </>
+      ) : (
+        value
+      )}
+    </strong>
     <span className="kpi-helper">{helper}</span>
     <div className="progress-track" aria-hidden="true">
       <div className="progress-fill" style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
