@@ -29,17 +29,24 @@ export const App = () => {
   // Filtered records: all normal filters applied
   const filteredRecords = useMemo(() => applyFilters(records, filters), [filters, records]);
 
-  // Global records: full dataset, only filtered by globalStartDate
+  // Global records: context filters (no dates) + globalStartDate only
   const globalRecords = useMemo(() => {
-    if (!globalStartDate) return records;
+    // Apply the same non-date filters as the main filter bar
+    const contextFiltered = applyFilters(records, {
+      ...filters,
+      startDate: '',
+      endDate: '',
+    });
+
+    if (!globalStartDate) return contextFiltered;
     const start = new Date(`${globalStartDate}T00:00:00`);
-    return records.filter((r) => {
+    return contextFiltered.filter((r) => {
       const dateStr = r.createdOn ?? r.requestDate;
       if (!dateStr) return true;
       const d = new Date(dateStr);
       return !Number.isNaN(d.getTime()) && d >= start;
     });
-  }, [records, globalStartDate]);
+  }, [records, filters, globalStartDate]);
 
   const metrics = useMemo(() => buildMetrics(filteredRecords), [filteredRecords]);
   const globalMetrics = useMemo(() => buildMetrics(globalRecords), [globalRecords]);
@@ -149,7 +156,7 @@ export const App = () => {
                   label="Concluídos"
                   value={metrics.concluded.toString()}
                   globalValue={globalMetrics.concluded.toString()}
-                  helper={`${metrics.completionRate.toFixed(1)}% / ${globalMetrics.completionRate.toFixed(1)}% de conclusão`}
+                  helper="Chamados concluídos"
                   progress={metrics.completionRate}
                   tone="teal"
                 />
